@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Student Skills</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container advisor-skill-container">
+    <h2>Student Skill Summary</h2>
+    <p><strong>ID:</strong> <span id="student-id"></span></p>
+    <p><strong>Name:</strong> <span id="student-name"></span></p>
+
+    <div class="skill-section">
+      <h3>Soft Skills</h3>
+      <ul id="soft-skill-list" class="skill-list"></ul>
+    </div>
+
+    <div class="skill-section">
+      <h3>Hard Skills</h3>
+      <ul id="hard-skill-list" class="skill-list"></ul>
+    </div>
+
+    <button class="back-btn" onclick="history.back()">⬅ Back</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["advisor"]);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get("studentId");
+
+    async function loadStudentSkills() {
+      if (!studentId) return alert("Missing studentId in URL");
+
+      const user = await apiGet(`/dashboard/skills/${studentId}`);
+
+      document.getElementById("student-id").innerText = user.userId;
+      document.getElementById("student-name").innerText = user.name;
+
+      const softList = document.getElementById("soft-skill-list");
+      const hardList = document.getElementById("hard-skill-list");
+
+      softList.innerHTML = (user.softSkills || []).map(s => `<li>${s}</li>`).join("");
+      hardList.innerHTML = (user.hardSkills || []).map(s => `<li>${s}</li>`).join("");
+    }
+
+    loadStudentSkills();
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Admin Review</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container admin-container">
+    <h2>Pending Activity Approvals</h2>
+    <div id="pending-list" class="activity-list"></div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["admin"]);
+
+    async function loadPendingActivities() {
+      try {
+        const activities = await apiGet("/activities/pending");
+        const container = document.getElementById("pending-list");
+        container.innerHTML = "";
+
+        if (activities.length === 0) {
+          container.innerHTML = "<p>No pending activities.</p>";
+          return;
+        }
+
+        activities.forEach(act => {
+          const card = document.createElement("div");
+          card.className = "activity-card";
+
+          card.innerHTML = `
+            <h3>${act.name}</h3>
+            <p>${act.description}</p>
+            <p><strong>Date:</strong> ${act.date}</p>
+            <p><strong>Soft Skills:</strong> ${(act.softSkills || []).join(", ")}</p>
+            <p><strong>Hard Skills:</strong> ${(act.hardSkills || []).join(", ")}</p>
+            <button onclick="approveActivity('${act.activityId}')">✅ Approve</button>
+          `;
+
+          container.appendChild(card);
+        });
+      } catch (err) {
+        alert("Failed to load pending activities.");
+        console.error(err);
+      }
+    }
+
+    async function approveActivity(id) {
+      if (!confirm("Approve this activity?")) return;
+
+      try {
+        await apiPost(`/activities/approve/${id}`);
+        alert("Activity approved.");
+        loadPendingActivities();
+      } catch (err) {
+        alert("Failed to approve activity.");
+        console.error(err);
+      }
+    }
+
+    loadPendingActivities();
+  </script>
+</body>
+</html>

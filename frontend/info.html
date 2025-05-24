@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Activity Info</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="title" id="title">Loading...</div>
+    <div class="description" id="description"></div>
+    <div class="tags" id="tags"></div>
+    <button class="start-btn" id="startQuizBtn" disabled>Start the Quiz</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["student"]);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const activityId = urlParams.get("activityId");
+
+    async function loadActivity() {
+      if (!activityId) return alert("Missing activity ID");
+
+      try {
+        const act = await apiGet(`/activities/${activityId}`);
+
+        document.getElementById("title").innerText = act.name;
+        document.getElementById("description").innerText = act.description;
+
+        const tags = [...(act.softSkills || []), ...(act.hardSkills || [])];
+        document.getElementById("tags").innerHTML = tags
+          .map(tag => `<span class="tag">${tag}</span>`)
+          .join("");
+
+        const now = new Date();
+        const actDate = new Date(act.date);
+        const btn = document.getElementById("startQuizBtn");
+
+        if (now >= actDate) {
+          btn.disabled = false;
+          btn.onclick = () => {
+            location.href = `quiz.html?activityId=${activityId}`;
+          };
+        } else {
+          btn.innerText = `Available on ${act.date}`;
+        }
+      } catch (err) {
+        alert("Failed to load activity info.");
+        console.error(err);
+      }
+    }
+
+    loadActivity();
+  </script>
+</body>
+</html>

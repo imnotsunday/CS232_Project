@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <img src="logo.png" alt="Skillio Logo" class="logo" />
+      <img src="banner.jpg" alt="Illustration" class="illustration" />
+    </div>
+    <div class="right">
+      <div class="form-box">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Password" />
+        <button onclick="handleLogin()">Login</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    async function handleLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!username || !password) {
+        alert("Please enter both fields.");
+        return;
+      }
+
+      const isStudent = !isNaN(username);
+      const endpoint = isStudent ? "/auth/login-student" : "/auth/login-role";
+      const body = isStudent
+        ? { studentId: username, password }
+        : { username, password };
+
+      try {
+        const response = await apiPost(endpoint, body);
+        saveLogin(response.token);
+
+        // Redirect by role
+        const role = JSON.parse(atob(response.token.split('.')[1])).role;
+        if (role === "admin") location.href = "admin-review.html";
+        else if (role === "advisor") location.href = "advisor-dashboard.html";
+        else if (role === "creator") location.href = "create-activity.html";
+        else location.href = "dashboard.html"; // student
+      } catch (err) {
+        alert(err.message || "Login failed.");
+        console.error(err);
+      }
+    }
+
+    function saveLogin(token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", payload.role);
+      localStorage.setItem("userId", payload.userId);
+      localStorage.setItem("name", payload.name);
+    }
+  </script>
+</body>
+</html>

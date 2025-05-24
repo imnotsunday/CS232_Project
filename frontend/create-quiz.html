@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Create Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container create-quiz-container">
+    <h2>Create Quiz for Activity</h2>
+
+    <form id="quiz-form">
+      <label>Activity ID</label>
+      <input type="text" id="activityId" placeholder="Paste the activityId" required />
+
+      <div id="questions-area"></div>
+
+      <button type="button" onclick="addQuestion()">➕ Add Question</button>
+      <button type="submit">💾 Save Quiz</button>
+    </form>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["creator"]);
+
+    let questionCount = 0;
+
+    function addQuestion() {
+      const area = document.getElementById("questions-area");
+      const qIndex = questionCount++;
+      const div = document.createElement("div");
+      div.className = "question-block";
+      div.innerHTML = `
+        <h4>Question ${qIndex + 1}</h4>
+        <label>Question Text</label>
+        <input type="text" name="question-${qIndex}" required />
+
+        <label>Choices (comma separated)</label>
+        <input type="text" name="choices-${qIndex}" placeholder="Choice A, Choice B, Choice C, Choice D" required />
+
+        <label>Correct Answer Index (0–3)</label>
+        <input type="number" name="correct-${qIndex}" min="0" max="3" required />
+
+        <label>Related Hard Skill</label>
+        <input type="text" name="skill-${qIndex}" placeholder="e.g. Programming" required />
+
+        <hr/>
+      `;
+      area.appendChild(div);
+    }
+
+    document.getElementById("quiz-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const activityId = document.getElementById("activityId").value.trim();
+      const questions = [];
+
+      for (let i = 0; i < questionCount; i++) {
+        const q = document.querySelector(`[name="question-${i}"]`).value.trim();
+        const choices = document.querySelector(`[name="choices-${i}"]`).value.split(",").map(c => c.trim()).filter(Boolean);
+        const correct = parseInt(document.querySelector(`[name="correct-${i}"]`).value);
+        const skill = document.querySelector(`[name="skill-${i}"]`).value.trim();
+
+        if (!q || choices.length < 2 || isNaN(correct) || !skill) {
+          alert(`Please fill all fields correctly for question ${i + 1}`);
+          return;
+        }
+
+        questions.push({ question: q, choices, correctAnswer: correct, skill });
+      }
+
+      try {
+        await apiPost(`/quiz/create/${activityId}`, { questions });
+        alert("Quiz saved successfully!");
+        location.href = "create-activity.html"; // or dashboard
+      } catch (err) {
+        alert("Failed to save quiz.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

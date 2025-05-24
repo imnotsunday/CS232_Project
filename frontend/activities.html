@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Activities</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="navbar">
+    <div>Skillio - กิจกรรมทั้งหมด</div>
+    <div id="user-name">Student</div>
+  </div>
+
+  <div class="activities-container" id="activities-list">
+    <!-- รายการกิจกรรม -->
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["student"]);
+
+    document.getElementById("user-name").innerText = localStorage.getItem("name") || "Student";
+
+    async function loadActivities() {
+      try {
+        const activities = await apiGet("/activities/approved");
+        const container = document.getElementById("activities-list");
+        container.innerHTML = "";
+
+        activities.forEach(act => {
+          const dateNow = new Date();
+          const dateEvent = new Date(act.date);
+          const canJoin = dateNow >= dateEvent;
+
+          const card = document.createElement("div");
+          card.className = "activity-card";
+
+          card.innerHTML = `
+            <h3>${act.name}</h3>
+            <p>${act.description}</p>
+            <div class="tags">
+              ${(act.softSkills || []).map(s => `<span class="tag">${s}</span>`).join("")}
+              ${(act.hardSkills || []).map(s => `<span class="tag">${s}</span>`).join("")}
+            </div>
+            <button ${canJoin ? "" : "disabled"} onclick="startQuiz('${act.activityId}')">
+              ${canJoin ? "JOIN" : "Available on: " + act.date}
+            </button>
+          `;
+
+          container.appendChild(card);
+        });
+      } catch (err) {
+        alert("Failed to load activities.");
+        console.error(err);
+      }
+    }
+
+    function startQuiz(activityId) {
+      location.href = `info.html?activityId=${activityId}`;
+    }
+
+    loadActivities();
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2 class="quiz-title">Quiz</h2>
+    <div id="quiz-container"></div>
+
+    <div class="upload-section">
+      <label>Upload proof of participation:</label>
+      <input type="file" id="proofImage" accept="image/*" />
+    </div>
+
+    <button class="submit-btn" onclick="submitQuiz()">Submit</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["student"]);
+
+    const activityId = new URLSearchParams(window.location.search).get("activityId");
+    let quizQuestions = [];
+
+    async function loadQuiz() {
+      try {
+        const data = await apiGet(`/quiz/${activityId}`);
+        quizQuestions = data.questions || [];
+
+        const container = document.getElementById("quiz-container");
+        container.innerHTML = "";
+
+        quizQuestions.forEach((q, index) => {
+          const div = document.createElement("div");
+          div.className = "quiz-question";
+          div.innerHTML = `
+            <p><strong>${index + 1}. ${q.question}</strong></p>
+            ${q.choices.map((choice, i) => `
+              <label>
+                <input type="radio" name="q${index}" value="${i}" />
+                ${choice}
+              </label><br/>
+            `).join("")}
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        alert("Failed to load quiz.");
+        console.error(err);
+      }
+    }
+
+    async function uploadProofImage() {
+      const file = document.getElementById("proofImage").files[0];
+      if (!file) return null;
+
+      try {
+        const { uploadURL, fileURL } = await apiGet(`/upload/presign/${activityId}`);
+
+        await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file
+        });
+
+        return fileURL;
+      } catch (err) {
+        alert("Upload failed.");
+        console.error(err);
+        return null;
+      }
+    }
+
+    async function submitQuiz() {
+      const answers = quizQuestions.map((_, i) => {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        return selected ? parseInt(selected.value) : null;
+      });
+
+      if (answers.includes(null)) {
+        alert("Please answer all questions.");
+        return;
+      }
+
+      try {
+        const proofImageUrl = await uploadProofImage();
+
+        await apiPost(`/quiz/submit/${activityId}`, { answers, proofImageUrl });
+
+        alert("Quiz submitted successfully!");
+        window.location.href = "result.html?activityId=" + activityId;
+      } catch (err) {
+        alert("Submit failed: " + (err.message || "Unexpected error"));
+        console.error(err);
+      }
+    }
+
+    loadQuiz();
+  </script>
+</body>
+</html>

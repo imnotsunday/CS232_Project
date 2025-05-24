@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container dashboard-container">
+    <h2>Dashboard</h2>
+
+    <div class="total-box">
+      Total Activities: <span id="totalActivities">0</span>
+    </div>
+
+    <div class="charts">
+      <div class="chart-section">
+        <h3>Soft Skills</h3>
+        <canvas id="softSkillsChart" width="300" height="300"></canvas>
+      </div>
+      <div class="chart-section">
+        <h3>Hard Skills</h3>
+        <canvas id="hardSkillsChart" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["student"]);
+
+    async function loadDashboard() {
+      try {
+        const data = await apiGet("/dashboard/student-summary");
+
+        document.getElementById("totalActivities").innerText = data.totalActivities;
+
+        const softSkills = data.softSkills || {};
+        const hardSkills = data.hardSkills || {};
+
+        createChart("softSkillsChart", softSkills);
+        createChart("hardSkillsChart", hardSkills);
+      } catch (err) {
+        alert("Error loading dashboard.");
+        console.error(err);
+      }
+    }
+
+    function createChart(canvasId, skillData) {
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      const labels = Object.keys(skillData);
+      const values = Object.values(skillData);
+
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: [
+              "#66bb6a", "#42a5f5", "#ffa726", "#ab47bc", "#ef5350", "#26c6da", "#8d6e63"
+            ]
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Skillio - Quiz Result</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container result-box">
+    <div class="activity-header">
+      <img src="banner.jpg" class="activity-image" />
+      <div>
+        <h2 id="activity-name">Activity Name</h2>
+        <p id="activity-desc">Description</p>
+        <div class="tags" id="all-skills"></div>
+      </div>
+    </div>
+
+    <div class="score-circle">✔</div>
+    <h2 class="score-text" id="score-text">Result</h2>
+
+    <div class="score-value" id="score-value">0 / 0</div>
+
+    <div class="tags result-tags" id="result-tags">
+      <!-- skill ที่ผ่าน / ไม่ผ่าน -->
+    </div>
+
+    <button class="back-btn" onclick="location.href='dashboard.html'">Back to Dashboard</button>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    requireAuth(["student"]);
+
+    const activityId = new URLSearchParams(window.location.search).get("activityId");
+
+    async function loadResult() {
+      try {
+        const activity = await apiGet(`/activities/${activityId}`);
+        const result = await apiGet(`/quiz/result/${activityId}`);
+
+        // แสดงข้อมูลกิจกรรม
+        document.getElementById("activity-name").innerText = activity.name;
+        document.getElementById("activity-desc").innerText = activity.description;
+
+        const allSkills = [...(activity.softSkills || []), ...(activity.hardSkills || [])];
+        document.getElementById("all-skills").innerHTML =
+          allSkills.map(skill => `<span class="tag">${skill}</span>`).join("");
+
+        // สรุปคะแนน
+        document.getElementById("score-value").innerText = `${result.correctAnswers} / ${result.totalQuestions}`;
+
+        // แสดงทักษะที่ได้กับไม่ได้
+        const passed = result.acquiredHardSkills || [];
+        const all = activity.hardSkills || [];
+        const failed = all.filter(s => !passed.includes(s));
+
+        const resultTags = document.getElementById("result-tags");
+        resultTags.innerHTML =
+          passed.map(s => `<span class="tag tag-pass">${s} ✅</span>`).join("") +
+          failed.map(s => `<span class="tag tag-fail">${s} ❌</span>`).join("");
+
+      } catch (err) {
+        alert("Failed to load quiz result.");
+        console.error(err);
+      }
+    }
+
+    loadResult();
+  </script>
+</body>
+</html>
